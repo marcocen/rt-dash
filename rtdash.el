@@ -1,5 +1,5 @@
 (require 'widget)
-(require 'rt-liber)
+(require 'rt-liberation)
 
 (eval-when-compile
   (require 'wid-edit))
@@ -8,13 +8,38 @@
   '((:name "Opened Tickets"
 	   :query "Status = 'open'"))
   "A plist of saved searches to show in the dashboard"
-  :type )
+  :type '(plist))
 
 (custom-set-variables '(rt-saved-queries
       '((:name "My Tickets"
 	       :query "( Status = 'open' OR Status = 'new' ) AND Owner = 'mcenturion'")
 	(:name "Todays Tickets"
 	       :query "( Status = 'open' OR Status = 'new' ) AND Owner = 'mcenturion' AND LastUpdated > 'yesterday'"))))
+
+(defvar rt-dash-mode-map
+  (let ((map (copy-keymap widget-keymap)))
+    (define-key map "q" 'rt-dash-bury-or-kill-this-buffer)
+    map)
+  "Keymap for \"rt-dash\" buffers")
+
+(defun rt-dash-mode ()
+  "A mode for rt-dashboard buffers"
+  (interactive)
+  (kill-all-local-variables)
+  (use-local-map rt-dash-mode-map)
+  (setq major-mode 'rt-dash-mode
+	mode-name "rt-dash"))
+
+(defun rt-dash-bury-or-kill-this-buffer ()
+  "Undisplay the current buffer.
+
+Bury the current buffer, unless there is only one window showing
+it, in which case it is killed."
+  (interactive)
+  (if (> (length (get-buffer-window-list nil nil t)) 1)
+      (bury-buffer)
+    (kill-buffer)))
+
 
 (defun rt-dashboard ()
   "Create a dashboard with saved rt-liberation queries."
@@ -23,13 +48,14 @@
   (kill-all-local-variables)
 					;  (make-local-variable 'widget-example-repeat)
   (let ((inhibit-read-only t))
-    (erase-buffer))
+    (erase-buffer)
   (remove-overlays)
+  (rt-dash-mode)
   (widget-insert "RT Dashboard\n\n")
   (rt-dash-insert-search)
   (rt-dash-insert-query-buttons rt-dash-saved-queries)
   (use-local-map widget-keymap)
-  (widget-setup))
+  (widget-setup)))
 
 (defun rt-dash-insert-search ()
   "Insert a search widget."
