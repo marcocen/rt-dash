@@ -11,6 +11,9 @@
   "A plist of saved searches to show in the dashboard"
   :type '(plist))
 
+(defcustom rt-dash-jump-key "j"
+  "The leading keybinding for query jump functions")
+
 ;;; rt-dash Major Mode
 (defvar rt-dash-mode-map
   (let ((map (copy-keymap widget-keymap)))
@@ -82,7 +85,8 @@
       (let ((key   (plist-get q :key))
 	    (query (plist-get q :query)))
 	(if key
-	    (define-key map (kbd (format "j %s" key)) `(lambda () (interactive)(rt-liber-browse-query ,query))))))))
+	    (define-key map (kbd (format "%s %s" rt-dash-jump-key key))
+	      `(lambda () (interactive)(rt-liber-browse-query ,query))))))))
 
 ;;; Auxiliary functions
 (defun rt-dash-search (term)
