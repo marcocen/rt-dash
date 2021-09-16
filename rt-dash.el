@@ -11,16 +11,6 @@
   "A plist of saved searches to show in the dashboard"
   :type '(plist))
 
-(custom-set-variables '(rt-dash-saved-queries
-      '((:name "My Tickets"
-	       :query "( Status = 'open' OR Status = 'new' ) AND Owner = 'mcenturion'"
-	       :key "u")
-	(:name "Today's Tickets"
-	       :query "( Status = 'open' OR Status = 'new' ) AND Owner = 'mcenturion' AND LastUpdated > 'yesterday'"
-	       :key "t")
-	(:name "No Tomados"
-	       :query "Owner = 'Nobody' AND (  Status = 'new' OR Status = 'open' ) AND Queue != 'abuse' AND Queue != 'staff_imfia' AND Queue != 'staff_iimpi' AND Queue != 'soporte_telefonia' AND Queue != 'soporte_fhce' AND Queue != 'staff_imerl'"))))
-
 ;;; rt-dash Major Mode
 (defvar rt-dash-mode-map
   (let ((map (copy-keymap widget-keymap)))
