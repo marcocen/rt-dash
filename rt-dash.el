@@ -15,6 +15,7 @@
 (defvar rt-dash-mode-map
   (let ((map (copy-keymap widget-keymap)))
     (define-key map "q" 'rt-dash-bury-or-kill-this-buffer)
+    (define-key map "g" 'rt-dashboard)
     map)
   "Keymap for \"rt-dash\" buffers")
 
