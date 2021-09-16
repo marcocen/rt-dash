@@ -53,16 +53,22 @@
 (defun rt-dash-insert-query-buttons (queries)
   "Adds a button for every query in the queries plist"
   (dolist (q queries)
-    (let ((name  (plist-get q :name))
-	  (query (plist-get q :query))
-	  (key   (plist-get q :key)))
-      (widget-insert (format "[%d]\t" (length (rt-liber-rest-run-ls-query query))))
+    (let* ((name  (plist-get q :name))
+	   (query  (plist-get q :query))
+	   (key    (plist-get q :key))
+	   (count  (length (rt-liber-rest-run-ls-query query))))
+      ;; to left-align the ticket counts.  3 is a magic number and should
+      ;; eventually be replaced by the max length of the query counts
+      (widget-insert (make-string (- 3 (length (number-to-string count)))
+				  ? ))
+      (widget-insert (number-to-string count))
+      (widget-insert " ")
       (widget-create 'push-button
 		     :notify `(lambda (&rest ignore)
 				(rt-liber-browse-query ,query))
 		     name)
       (if key
-	  (widget-insert (format "(%s) \n" key))
+	  (widget-insert (format "(%s)\n" key))
 	(widget-insert "\n")))))
 
 (defun rt-dash-add-bindings (queries)
