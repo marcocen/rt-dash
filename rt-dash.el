@@ -110,3 +110,5 @@ it, in which case it is killed."
   (if (> (length (get-buffer-window-list nil nil t)) 1)
       (bury-buffer)
     (kill-buffer)))
+
+(provide 'rt-dash)
