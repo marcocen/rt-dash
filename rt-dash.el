@@ -47,7 +47,7 @@
 			   (rt-dash-search (widget-value widget))))
   (widget-insert ".")
   (put-text-property (1- (point)) (point) 'invisible t)
-  (widget-insert "\n\n"))
+  (widget-insert "\n"))
 
 (defun rt-dash-insert-query-buttons (queries)
   "Adds a button for every query in the queries plist"
