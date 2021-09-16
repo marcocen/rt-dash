@@ -36,8 +36,8 @@
   (rt-dash-insert-query-buttons rt-dash-saved-queries)
   (rt-dash-add-bindings rt-dash-saved-queries)
   (widget-setup))
-  (rt-dash-mode)
-  )
+  (goto-char 0)
+  (rt-dash-mode))
 
 (defun rt-dash-insert-search ()
   "Insert a search widget."
