@@ -1,18 +1,25 @@
 (require 'widget)
 (require 'rt-liberation)
+(require 'magit)
 
 (eval-when-compile
   (require 'wid-edit))
 
 ;;; Customizable Variables
 (defcustom rt-dash-saved-queries
-  '((:name "Opened Tickets"
-	   :query "Status = 'open'"))
+  '((:name "My Opened Tickets"
+	   :query "Status = 'open' and Owner = 'mcenturion'"))
   "A plist of saved searches to show in the dashboard"
   :type '(plist))
 
 (defcustom rt-dash-jump-key "j"
   "The leading keybinding for query jump functions")
+
+(defcustom rt-dash-queues nil
+  "A list of queues to add in the queues section of the dashboard"
+  :type '(list))
+
+(custom-set-variables '(rt-dash-queues '("drupal")))
 
 ;;; rt-dash Major Mode
 (defvar rt-dash-mode-map
@@ -31,17 +38,62 @@
   (interactive)
   (switch-to-buffer "*RT Dashboard*")
   (kill-all-local-variables)
-  (make-local-variable 'widget-example-repeat)
-  (let ((inhibit-read-only t))
-    (erase-buffer)
-  (remove-overlays)
-  (widget-insert "RT Dashboard\n\n")
-  (rt-dash-insert-search)
-  (rt-dash-insert-query-buttons rt-dash-saved-queries)
-  (rt-dash-add-bindings rt-dash-saved-queries)
-  (widget-setup))
-  (goto-char 0)
-  (rt-dash-mode))
+  (let ((magit-insert-section--parent magit-root-section))
+    (widget-insert "RT Dashboard\n\n")
+    (magit-insert-section (saved-queries nil t)
+      (magit-insert-heading "Saved Queries")
+      (rt-dash-insert-queries))
+    (widget-insert "\n")
+    (magit-insert-section (queues nil t)
+      (magit-insert-heading "Queues")
+      (magit-insert-section-body (rt-dash-insert-queues))))
+  (magit-section-mode)
+  (goto-char 0))
+
+(defun rt-dash-insert-queries ()
+  "Inserts all query sections"
+  (dolist (q rt-dash-saved-queries)
+    (rt-dash-insert-query q)))
+
+(defun rt-dash-insert-query (q)
+  (let* ((name   (plist-get q :name))
+	 (query  (plist-get q :query))
+	 (key    (plist-get q :key))
+	 (ticketlist (rt-liber-rest-run-ls-query query)))
+    (magit-insert-section (magit-section name t)
+      (magit-insert-heading (propertize name 'query query))
+      (let ((tickets (rt-liber-rest-run-show-base-query ticketlist)))
+	(dolist (ticket tickets)
+	  (rt-dash-insert-ticket-link ticket))))))
+
+(defun rt-dash-insert-ticket-link (ticket)
+  "Insert a link to view TICKET history"
+  (let ((subject (cdr (assoc "Subject" ticket)))
+	(id (car (cdr (split-string (cdr (assoc "id" ticket)) "/")))))
+    (magit-insert-section (ticket nil t)
+      (widget-create 'link
+		     :notify `(lambda (&rest ignore)
+				(rt-liber-display-ticket-history ',ticket))
+		     :button-prefix ""
+		     :button-suffix ""
+		     (format "[#%s] %s\n" id subject)))))
+
+(defun rt-dash-insert-queues ()
+  "Inserts all saved queues links"
+  (dolist (queue rt-dash-queues)
+    (rt-dash-insert-queue-link queue)))
+
+(defun rt-dash-insert-queue-link (queue)
+  "Insert a link to view a queue"
+  (magit-insert-section (queue nil t)
+    (widget-create 'link
+		   :notify `(lambda (&rest ignore)
+			      (rt-liber-browse-query
+			       (format "Queue = '%s' and Status = 'open'"
+				       queue)))
+		   :button-prefix ""
+		   :button-suffix ""
+		   (format "%s\n" queue))))
 
 (defun rt-dash-insert-search ()
   "Insert a search widget."
@@ -52,6 +104,16 @@
   (widget-insert ".")
   (put-text-property (1- (point)) (point) 'invisible t)
   (widget-insert "\n"))
+
+(defun rt-dash-insert-queue-button (q)
+  "Inserts a button to see all tickets in QUEUE"
+  (widget-create 'link
+		 :notify `(lambda (&rest ignore)
+			    (rt-liber-browse-query
+			     (format "Queue = '%s'" ,q)))
+		 :button-prefix ""
+		 :button-suffix ""
+		 q))
 
 (defun rt-dash-insert-query-buttons (queries)
   "Adds a button for every query in the queries plist"
@@ -70,12 +132,14 @@
 				? ))
     (widget-insert (number-to-string count))
     (widget-insert " ")
-    (widget-create 'push-button
+    (widget-create 'link
 		   :notify `(lambda (&rest ignore)
 			      (rt-liber-browse-query ,query))
+		   :button-prefix ""
+		   :button-suffix ""
 		   name)
     (if key
-	(widget-insert (format "(%s %s)\n" rt-dash-jump-key key))
+	(widget-insert (format " (%s %s)\n" rt-dash-jump-key key))
       (widget-insert "\n"))))
 
 (defun rt-dash-add-bindings (queries)
