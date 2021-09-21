@@ -37,18 +37,15 @@
   "Create a dashboard with saved rt-liberation queries."
   (interactive)
   (switch-to-buffer "*RT Dashboard*")
+  (erase-buffer)
   (kill-all-local-variables)
-  (let ((magit-insert-section--parent magit-root-section))
+  (let ((magit-insert-section--parent magit-root-section)
+	(inhibit-read-only t))
     (widget-insert "RT Dashboard\n\n")
     (magit-insert-section (saved-queries nil t)
       (magit-insert-heading "Saved Queries")
       (rt-dash-insert-queries))
-    (widget-insert "\n")
-    (magit-insert-section (queues nil t)
-      (magit-insert-heading "Queues")
-      (magit-insert-section-body (rt-dash-insert-queues))))
-  (magit-section-mode)
-  (goto-char 0))
+    (magit-section-mode)))
 
 (defun rt-dash-insert-queries ()
   "Inserts all query sections"
@@ -59,24 +56,22 @@
   (let* ((name   (plist-get q :name))
 	 (query  (plist-get q :query))
 	 (key    (plist-get q :key))
-	 (ticketlist (rt-liber-rest-run-ls-query query)))
+	 (ticketlist (rt-liber-rest-run-subject-query query)))
     (magit-insert-section (magit-section name t)
       (magit-insert-heading (propertize name 'query query))
-      (let ((tickets (rt-liber-rest-run-show-base-query ticketlist)))
-	(dolist (ticket tickets)
-	  (rt-dash-insert-ticket-link ticket))))))
+	(dolist (ticket ticketlist)
+	  (apply 'rt-dash-insert-ticket-link ticket)))))
 
-(defun rt-dash-insert-ticket-link (ticket)
-  "Insert a link to view TICKET history"
-  (let ((subject (cdr (assoc "Subject" ticket)))
-	(id (car (cdr (split-string (cdr (assoc "id" ticket)) "/")))))
+(defun rt-dash-insert-ticket-link (id subject)
+  "Insert a link to view the ticket with ID history"
     (magit-insert-section (ticket nil t)
       (widget-create 'link
 		     :notify `(lambda (&rest ignore)
-				(rt-liber-display-ticket-history ',ticket))
+				(rt-dash-browse-ticket-by-id ',id))
 		     :button-prefix ""
 		     :button-suffix ""
-		     (format "[#%s] %s\n" id subject)))))
+		     (format "[#%s] %s\n" id subject))))
+
 
 (defun rt-dash-insert-queues ()
   "Inserts all saved queues links"
